@@ -1,0 +1,1 @@
+Two tables at one page: https://stackoverflow.com/questions/67641177/how-to-have-two-dash-data-tables-with-ddc-interval-on-one-page
