@@ -10,31 +10,32 @@ from rich.progress import Progress
 HK_LAT = 22.302711
 HK_LONG = 114.177216
 
+
 def get_distance_from_lat_lon_km(lat, lon):
     """
-    Calculate the great-circle distance between two points on the Earth 
+    Calculate the great-circle distance between two points on the Earth
     using the Haversine formula.
-    
+
     Parameters:
     lat1, lon1: Latitude and longitude of first point in degrees
     lat2, lon2: Latitude and longitude of second point in degrees
-    
+
     Returns:
     Distance between the points in kilometers
     """
     R = 6371  # Earth's radius in kilometers
-    
+
     # Convert degrees to radians
     d_lat = math.radians(HK_LAT - lat)
     d_lon = math.radians(HK_LONG - lon)
-    
+
     # Haversine formula
-    a = (math.sin(d_lat/2) * math.sin(d_lat/2) +
-         math.cos(math.radians(HK_LAT)) * math.cos(math.radians(lat)) *
-         math.sin(d_lon/2) * math.sin(d_lon/2))
-    
+    a = math.sin(d_lat / 2) * math.sin(d_lat / 2) + math.cos(
+        math.radians(HK_LAT)
+    ) * math.cos(math.radians(lat)) * math.sin(d_lon / 2) * math.sin(d_lon / 2)
+
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    
+
     distance = R * c  # Distance in km
     return distance
 
@@ -63,6 +64,7 @@ def rich_display_dataframe(df, title="Dataframe") -> None:
             table.add_row(*row)
     print(table)
 
+
 def countdown(interval, type="info"):
     console = Console()
     now = datetime.now()
@@ -70,12 +72,18 @@ def countdown(interval, type="info"):
         minute = (now.minute // interval) * interval
         next_quarter = minute + interval
         if next_quarter == 60:
-            next_time = (now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
+            next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(
+                hours=1
+            )
         else:
             next_time = now.replace(minute=next_quarter, second=0, microsecond=0)
     elif type == "TCSGNL":
-        next_time = (now.replace(minute=46, second=0, microsecond=0)) if now.minute < 46 else (now.replace(minute=46, second=0, microsecond=0) + timedelta(hours=1))
-        
+        next_time = (
+            (now.replace(minute=46, second=45, microsecond=0))
+            if now.minute < 46
+            else (now.replace(minute=46, second=45, microsecond=0) + timedelta(hours=1))
+        )
+
     seconds_left = int((next_time - now).total_seconds())
     minutes_left = seconds_left // 60
     if minutes_left <= 5:
@@ -87,7 +95,9 @@ def countdown(interval, type="info"):
     if minutes_left == 60:
         console.log(f"[{color}]1[/] hour until next fetch")
     else:
-        console.log(f"[{color}]{minutes_left}[/] minutes and [{color}]{seconds_left - minutes_left * 60}[/] seconds until next fetch")
+        console.log(
+            f"[{color}]{minutes_left}[/] minutes and [{color}]{seconds_left - minutes_left * 60}[/] seconds until next fetch"
+        )
 
     with Progress() as progress:
         task = progress.add_task("Waiting", total=seconds_left)
