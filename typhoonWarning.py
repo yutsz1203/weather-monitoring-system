@@ -30,7 +30,8 @@ def typhoonWarning():
                     content = warning["contents"]
                     text = "".join(content)
                     typhoon_info = content[3]
-                    hour_pattern = re.compile(r"\d{2}")
+                    print(typhoon_info)
+                    hour_pattern = re.compile(r"\d+")
                     update_hour = (re.search(hour_pattern, typhoon_info)).group()
                     if update_hour == last_update_hour:
                         print(
