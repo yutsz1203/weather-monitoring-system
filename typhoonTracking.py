@@ -155,6 +155,11 @@ def typhoon_tracking(refresh):
                     eight_station_df.loc[eight_station_df["Location"] == station, "Max_Gust(km/h)"] = latest_max_gust
                     eight_station_df.loc[eight_station_df["Location"] == station, "Max_Gust_time"] = f"{hour}:{minute}"
 
+        eight_station_hurricane_mean_speed = list(filter(lambda station: station in eight_stations, hurricane_mean_speed))
+        eight_station_storm_mean_speed = list(filter(lambda station: station in eight_stations, storm_mean_speed))
+        eight_station_gale_mean_speed = list(filter(lambda station: station in eight_stations, gale_mean_speed))
+        eight_station_strong_mean_speed = list(filter(lambda station: station in eight_stations, strong_mean_speed))
+
         # print(eight_station_df)
         eight_station_df.to_csv("data/windinfo/eight_station_record.csv", index=False)
         # Output
@@ -165,8 +170,8 @@ def typhoon_tracking(refresh):
             max_gust_wind_scale = get_wind_scale(max_gust)
             padded_location = pad_chinese_string(location, 12)
             padded_wind_dir = pad_chinese_string(wind_direction, 8)
-            print(f"{padded_location} {padded_wind_dir} {int(mean_speed)}(F{mean_speed_wind_scale}) | {int(max_gust)}(F{max_gust_wind_scale})\n")
-        
+            print(f"{padded_location} {padded_wind_dir} {int(mean_speed)}(F{mean_speed_wind_scale}) | {int(max_gust)}(F{max_gust_wind_scale})")
+        print("")
         if len(hurricane_mean_speed) >= 1:
             print(f"颶風({len(hurricane_mean_speed)}): {'、'.join(hurricane_mean_speed)}")
         
@@ -194,8 +199,18 @@ def typhoon_tracking(refresh):
         print("")
         print(f"最低氣壓: {min_pressure} ({'、'.join(min_pressure_stations)})")
         print(f"最高氣壓: {max_pressure} ({'、'.join(max_pressure_stations)})\n")
-        print("24小時八站記錄:")
+        
+        eight_station_status = []
+        if len(eight_station_hurricane_mean_speed) >= 1:
+            eight_station_status.append(f"颶風8中{len(eight_station_hurricane_mean_speed)}")
+        if len(eight_station_hurricane_mean_speed) >= 1:
+            eight_station_status.append(f"暴風8中{len(eight_station_storm_mean_speed)}")
+        if len(eight_station_hurricane_mean_speed) >= 1:
+            eight_station_status.append(f"烈風8中{len(eight_station_gale_mean_speed)}")
+        if len(eight_station_hurricane_mean_speed) >= 1:
+            eight_station_status.append(f"強風8中{len(eight_station_strong_mean_speed)}")
 
+        print(f"24小時八站記錄:{'、'.join(eight_station_status)}")
         for location, _, mean_speed, mean_speed_time, max_gust, max_gust_time in eight_station_df.itertuples(index=False):
             padded_location = pad_chinese_string(location, 6)
             print(f"{padded_location} {int(mean_speed):3} ({mean_speed_time}) | {int(max_gust):3} ({max_gust_time})")
