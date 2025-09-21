@@ -1,7 +1,6 @@
 import pandas as pd
-import numpy as np
-from datetime import datetime
-from utils import rich_display_dataframe, countdown
+from utils import countdown
+from const import eight_stations
 
 def get_wind_scale(speed):
     if speed >= 118:
@@ -39,7 +38,7 @@ def pad_chinese_string(s, target_width):
         return s
     return s + ' ' * padding_needed
 
-def typhoon_tracking():
+def typhoon_tracking(refresh):
     pd.set_option("display.unicode.east_asian_width", True)
     wind_data = "https://data.weather.gov.hk/weatherAPI/hko_data/regional-weather/latest_10min_wind_uc.csv"
     pressure_data = "https://data.weather.gov.hk/weatherAPI/hko_data/regional-weather/latest_1min_pressure_uc.csv"
@@ -47,7 +46,12 @@ def typhoon_tracking():
     while True:
         wind_df = pd.read_csv(wind_data, encoding="utf-8")
         current_time = str(wind_df.iloc[0]["日期時間"])
-        date_time = f"{current_time[0:4]}/{current_time[4:6]}/{current_time[6:8]} {current_time[8:10]}:{current_time[10:]}"
+        year = current_time[0:4]
+        month = current_time[4:6]
+        date = current_time[6:8]
+        hour = current_time[8:10]
+        minute = current_time[10:]
+        date_time = f"{year}/{month}/{date} {hour}:{minute}"
 
         wind_df.drop(wind_df.columns[0], axis=1, inplace=True)
         wind_df.columns = [
@@ -56,6 +60,8 @@ def typhoon_tracking():
             "Mean_Speed(km/h)",
             "Max_Gust(km/h)",
         ]
+
+        wind_df = wind_df.sort_values(by="Mean_Speed(km/h)", ascending=False)
 
         # print(wind_df)
         
@@ -87,25 +93,80 @@ def typhoon_tracking():
                 gale_max_gust.append(station)
             elif max_gust >= 41:
                 strong_max_gust.append(station)
-    
-        # Output
-        print(f"{date_time}\n")
-        print(f"平均風向: {'、'.join(wind_directions)}")
-
+        
         qualified_station = hurricane_mean_speed + hurricane_max_gust + storm_mean_speed + storm_max_gust + gale_mean_speed + gale_max_gust + strong_mean_speed + strong_max_gust
         qualified_station_set = set(qualified_station)
 
         qualified_df = wind_df[wind_df["Location"].isin(qualified_station_set)]
-        qualified_df = qualified_df.sort_values(by="Mean_Speed(km/h)", ascending=False)
+        
+        # Getting max and min pressure
+        pressure_df = pd.read_csv(pressure_data, encoding="utf-8")
+        pressure_df.drop(pressure_df.columns[0], axis=1, inplace=True)
+        pressure_df.columns = [
+            "Location",
+            "Mean_Sea_Level_Pressure(hPa)"
+        ]
+        max_pressure = pressure_df["Mean_Sea_Level_Pressure(hPa)"].max()
+        max_pressure_stations_df = pressure_df[pressure_df["Mean_Sea_Level_Pressure(hPa)"] == max_pressure]
 
+        min_pressure = pressure_df["Mean_Sea_Level_Pressure(hPa)"].min()
+        min_pressure_stations_df = pressure_df[pressure_df["Mean_Sea_Level_Pressure(hPa)"] == min_pressure]
+
+        max_pressure_stations, min_pressure_stations = [], []
+
+        for row in max_pressure_stations_df.itertuples(index=False):
+            max_pressure_stations.append(row.Location)
+        
+        for row in min_pressure_stations_df.itertuples(index=False):
+            min_pressure_stations.append(row.Location)
+
+        if refresh:
+            eight_station_df = wind_df[wind_df["Location"].isin(eight_stations)]
+            eight_station_df["Mean_Speed_time"] = f"{hour}:{minute}"
+            eight_station_df["Max_Gust_time"] = f"{hour}:{minute}"
+            new_order = ["Location", 
+                         "Mean_Wind_Direction",
+                         "Mean_Speed(km/h)",
+                         "Mean_Speed_time",
+                         "Max_Gust(km/h)",
+                         "Max_Gust_time"
+                         ]
+            eight_station_df = eight_station_df.reindex(columns=new_order)
+            print(eight_station_df)
+        else:
+            eight_station_df = pd.read_csv("data/windinfo/eight_station_record.csv")
+            latest_eight_station_df = wind_df[wind_df["Location"].isin(eight_stations)].copy()
+            latest_eight_station_df.loc[:,"Mean_Speed_time"] = f"{hour}:{minute}"
+            latest_eight_station_df.loc[:,"Max_Gust_time"] = f"{hour}:{minute}"
+
+            for station in latest_eight_station_df["Location"]:
+                latest_station = latest_eight_station_df.loc[latest_eight_station_df["Location"] == station]
+                current_station = eight_station_df.loc[eight_station_df["Location"] == station]
+                
+                latest_mean_speed = latest_station["Mean_Speed(km/h)"].iloc[0]
+                curr_max_mean_speed = current_station["Mean_Speed(km/h)"].iloc[0]
+                if latest_mean_speed > curr_max_mean_speed:
+                    eight_station_df.loc[eight_station_df["Location"] == station, "Mean_Speed(km/h)"] = latest_mean_speed
+                    eight_station_df.loc[eight_station_df["Location"] == station, "Mean_Speed_time"] = f"{hour}:{minute}"
+                
+                latest_max_gust = latest_station["Max_Gust(km/h)"].iloc[0]
+                curr_max_max_gust = current_station["Max_Gust(km/h)"].iloc[0]
+                if latest_max_gust > curr_max_max_gust:
+                    eight_station_df.loc[eight_station_df["Location"] == station, "Max_Gust(km/h)"] = latest_max_gust
+                    eight_station_df.loc[eight_station_df["Location"] == station, "Max_Gust_time"] = f"{hour}:{minute}"
+
+        # print(eight_station_df)
+        eight_station_df.to_csv("data/windinfo/eight_station_record.csv", index=False)
+        # Output
+        print(f"{date_time}\n")
+        print(f"平均風向: {'、'.join(wind_directions)}")
         for location, wind_direction, mean_speed, max_gust in qualified_df.itertuples(index=False):
             mean_speed_wind_scale = get_wind_scale(mean_speed)
             max_gust_wind_scale = get_wind_scale(max_gust)
             padded_location = pad_chinese_string(location, 12)
             padded_wind_dir = pad_chinese_string(wind_direction, 8)
-            print(f"{padded_location} {padded_wind_dir} {int(mean_speed)}(F{mean_speed_wind_scale}) | {int(max_gust)}(F{max_gust_wind_scale})")
-
-        print("")
+            print(f"{padded_location} {padded_wind_dir} {int(mean_speed)}(F{mean_speed_wind_scale}) | {int(max_gust)}(F{max_gust_wind_scale})\n")
+        
         if len(hurricane_mean_speed) >= 1:
             print(f"颶風({len(hurricane_mean_speed)}): {'、'.join(hurricane_mean_speed)}")
         
@@ -129,35 +190,29 @@ def typhoon_tracking():
         
         if len(strong_max_gust) >= 1:
             print(f"強陣({len(strong_max_gust)}): {'、'.join(strong_max_gust)}")
-        
-        pressure_df = pd.read_csv(pressure_data, encoding="utf-8")
-        pressure_df.drop(pressure_df.columns[0], axis=1, inplace=True)
-        pressure_df.columns = [
-            "Location",
-            "Mean_Sea_Level_Pressure(hPa)"
-        ]
-        max_pressure = pressure_df["Mean_Sea_Level_Pressure(hPa)"].max()
-        max_pressure_stations_df = pressure_df[pressure_df["Mean_Sea_Level_Pressure(hPa)"] == max_pressure]
-
-        min_pressure = pressure_df["Mean_Sea_Level_Pressure(hPa)"].min()
-        min_pressure_stations_df = pressure_df[pressure_df["Mean_Sea_Level_Pressure(hPa)"] == min_pressure]
-
-        max_pressure_stations, min_pressure_stations = [], []
-
-        for row in max_pressure_stations_df.itertuples(index=False):
-            max_pressure_stations.append(row.Location)
-        
-        for row in min_pressure_stations_df.itertuples(index=False):
-            min_pressure_stations.append(row.Location)
 
         print("")
         print(f"最低氣壓: {min_pressure} ({'、'.join(min_pressure_stations)})")
-        print(f"最高氣壓: {max_pressure} ({'、'.join(max_pressure_stations)})")
-        print("")
+        print(f"最高氣壓: {max_pressure} ({'、'.join(max_pressure_stations)})\n")
         print("24小時八站記錄:")
+
+        for location, _, mean_speed, mean_speed_time, max_gust, max_gust_time in eight_station_df.itertuples(index=False):
+            padded_location = pad_chinese_string(location, 6)
+            print(f"{padded_location} {int(mean_speed):3} ({mean_speed_time}) | {int(max_gust):3} ({max_gust_time})")
 
         countdown(10)
         print("")
 
 if __name__ == "__main__":
-    typhoon_tracking()
+    while True:
+        action = input("Refresh eight station wind record? (Y/N): ").lower()
+        if action == "y":
+            refresh = True
+            break
+        elif action == "n":
+            refresh = False
+            break
+        else:
+            print("Invalid input. Please enter Y or N.")
+
+    typhoon_tracking(refresh)

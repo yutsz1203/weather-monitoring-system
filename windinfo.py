@@ -1,7 +1,10 @@
-import pandas as pd
-import numpy as np
 from datetime import datetime
-from utils import rich_display_dataframe, countdown
+
+import numpy as np
+import pandas as pd
+
+from const import eight_stations
+from utils import countdown, rich_display_dataframe
 
 
 def get_windinfo():
@@ -156,16 +159,6 @@ def get_windinfo():
         init_df = df.copy()
         df.to_csv("data/windinfo/latest_windinfo.csv", index=False)
 
-        eight_stations = [
-            "長洲",
-            "赤鱲角",
-            "青衣",
-            "流浮山",
-            "啟德",
-            "沙田",
-            "西貢",
-            "打鼓嶺",
-        ]
         eight_stations_df = df[df["Location"].isin(eight_stations)]
 
         rich_display_dataframe(
