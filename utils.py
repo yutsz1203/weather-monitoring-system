@@ -7,22 +7,11 @@ from rich.console import Console
 from rich.errors import NotRenderableError
 from rich.progress import Progress
 
-HK_LAT = 22.302711
-HK_LONG = 114.177216
+HK_LAT = 22.3023
+HK_LONG = 114.1745
 
 
 def get_distance_from_lat_lon_km(lat, lon):
-    """
-    Calculate the great-circle distance between two points on the Earth
-    using the Haversine formula.
-
-    Parameters:
-    lat1, lon1: Latitude and longitude of first point in degrees
-    lat2, lon2: Latitude and longitude of second point in degrees
-
-    Returns:
-    Distance between the points in kilometers
-    """
     R = 6371  # Earth's radius in kilometers
 
     # Convert degrees to radians
