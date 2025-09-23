@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from utils import countdown
 from const import eight_stations
 
@@ -38,7 +39,7 @@ def pad_chinese_string(s, target_width):
         return s
     return s + ' ' * padding_needed
 
-def typhoon_tracking(refresh):
+def typhoon_tracking(refresh, init=False):
     pd.set_option("display.unicode.east_asian_width", True)
     wind_data = "https://data.weather.gov.hk/weatherAPI/hko_data/regional-weather/latest_10min_wind_uc.csv"
     pressure_data = "https://data.weather.gov.hk/weatherAPI/hko_data/regional-weather/latest_1min_pressure_uc.csv"
@@ -51,7 +52,7 @@ def typhoon_tracking(refresh):
         date = current_time[6:8]
         hour = current_time[8:10]
         minute = current_time[10:]
-        date_time = f"{year}/{month}/{date} {hour}:{minute}"
+        date_time = f"{date}/{month}/{year} {hour}:{minute}"
 
         wind_df.drop(wind_df.columns[0], axis=1, inplace=True)
         wind_df.columns = [
@@ -121,9 +122,9 @@ def typhoon_tracking(refresh):
             min_pressure_stations.append(row.Location)
 
         if refresh:
-            eight_station_df = wind_df[wind_df["Location"].isin(eight_stations)]
-            eight_station_df["Mean_Speed_time"] = f"{hour}:{minute}"
-            eight_station_df["Max_Gust_time"] = f"{hour}:{minute}"
+            eight_station_df = wind_df[wind_df["Location"].isin(eight_stations)].copy()
+            eight_station_df.loc[:,"Mean_Speed_time"] = f"{hour}:{minute}"
+            eight_station_df.loc[:,"Max_Gust_time"] = f"{hour}:{minute}"
             new_order = ["Location", 
                          "Mean_Wind_Direction",
                          "Mean_Speed(km/h)",
@@ -132,7 +133,9 @@ def typhoon_tracking(refresh):
                          "Max_Gust_time"
                          ]
             eight_station_df = eight_station_df.reindex(columns=new_order)
-            print(eight_station_df)
+            refresh = False
+            # print(eight_station_df)
+            
         else:
             eight_station_df = pd.read_csv("data/windinfo/eight_station_record.csv")
             latest_eight_station_df = wind_df[wind_df["Location"].isin(eight_stations)].copy()
@@ -155,11 +158,24 @@ def typhoon_tracking(refresh):
                     eight_station_df.loc[eight_station_df["Location"] == station, "Max_Gust(km/h)"] = latest_max_gust
                     eight_station_df.loc[eight_station_df["Location"] == station, "Max_Gust_time"] = f"{hour}:{minute}"
 
-        eight_station_hurricane_mean_speed = list(filter(lambda station: station in eight_stations, hurricane_mean_speed))
-        eight_station_storm_mean_speed = list(filter(lambda station: station in eight_stations, storm_mean_speed))
-        eight_station_gale_mean_speed = list(filter(lambda station: station in eight_stations, gale_mean_speed))
-        eight_station_strong_mean_speed = list(filter(lambda station: station in eight_stations, strong_mean_speed))
-
+        eight_station_df.sort_values(by="Mean_Speed(km/h)", inplace=True, ascending=False)
+        eight_station_hurricane_mean_speed, eight_station_storm_mean_speed, eight_station_gale_mean_speed, eight_station_strong_mean_speed = [], [], [], []
+        for station, _, mean_speed, _, _, _ in eight_station_df.itertuples(index=False):
+            if mean_speed >= 118:
+                eight_station_hurricane_mean_speed.append(station)
+                eight_station_storm_mean_speed.append(station)
+                eight_station_gale_mean_speed.append(station)
+                eight_station_strong_mean_speed.append(station)
+            elif mean_speed >= 88:
+                eight_station_storm_mean_speed.append(station)
+                eight_station_gale_mean_speed.append(station)
+                eight_station_strong_mean_speed.append(station)
+            elif mean_speed >= 63:
+                eight_station_gale_mean_speed.append(station)
+                eight_station_strong_mean_speed.append(station)
+            elif mean_speed >= 41:
+                eight_station_strong_mean_speed.append(station)
+            
         # print(eight_station_df)
         eight_station_df.to_csv("data/windinfo/eight_station_record.csv", index=False)
         # Output
@@ -203,17 +219,79 @@ def typhoon_tracking(refresh):
         eight_station_status = []
         if len(eight_station_hurricane_mean_speed) >= 1:
             eight_station_status.append(f"颶風8中{len(eight_station_hurricane_mean_speed)}")
-        if len(eight_station_hurricane_mean_speed) >= 1:
+        if len(eight_station_storm_mean_speed) >= 1:
             eight_station_status.append(f"暴風8中{len(eight_station_storm_mean_speed)}")
-        if len(eight_station_hurricane_mean_speed) >= 1:
+        if len(eight_station_gale_mean_speed) >= 1:
             eight_station_status.append(f"烈風8中{len(eight_station_gale_mean_speed)}")
-        if len(eight_station_hurricane_mean_speed) >= 1:
+        if len(eight_station_strong_mean_speed) >= 1:
             eight_station_status.append(f"強風8中{len(eight_station_strong_mean_speed)}")
 
-        print(f"24小時八站記錄:{'、'.join(eight_station_status)}")
+        print(f"24小時八站記錄: {'、'.join(eight_station_status)}")
         for location, _, mean_speed, mean_speed_time, max_gust, max_gust_time in eight_station_df.itertuples(index=False):
             padded_location = pad_chinese_string(location, 6)
             print(f"{padded_location} {int(mean_speed):3} ({mean_speed_time}) | {int(max_gust):3} ({max_gust_time})")
+
+
+        if init:
+            wind_record_df = wind_df.copy()
+            wind_record_df.columns = ["Location", "Max_10_Min_Mean_Wind_Direction", "Max_10_Min_Mean_Speed(km/h)", "Max_Gust(km/h)"]
+            wind_record_df["Max_10_Min_Mean_Speed_Time"] = date_time
+            wind_record_df["Max_Gust_Direction"] = wind_record_df["Max_10_Min_Mean_Wind_Direction"]
+            wind_record_df["Max_Gust_Time"] = date_time
+            wind_record_df["Max_60_Min_Mean_Wind_Direction"] = wind_record_df["Max_10_Min_Mean_Wind_Direction"]
+            wind_record_df["Max_60_Min_Mean_Speed(km/h)"] = round(wind_record_df["Max_10_Min_Mean_Speed(km/h)"] * 0.95)
+            wind_record_df["Max_60_Min_Mean_Speed_Time"] = wind_record_df["Max_10_Min_Mean_Speed_Time"]
+            new_order = ["Location", "Max_60_Min_Mean_Wind_Direction", "Max_60_Min_Mean_Speed(km/h)", "Max_60_Min_Mean_Speed_Time", "Max_Gust_Direction", "Max_Gust(km/h)", "Max_Gust_Time", "Max_10_Min_Mean_Wind_Direction", "Max_10_Min_Mean_Speed(km/h)", "Max_10_Min_Mean_Speed_Time"]
+            wind_record_df = wind_record_df.reindex(columns=new_order)
+            wind_record_df.to_excel("data/typhoon/wind_record.xlsx", index=False)
+
+            pressure_record_df = pressure_df.copy()
+            pressure_record_df["Time"] = date_time
+            pressure_record_df.rename(columns={"Mean_Sea_Level_Pressure(hPa)" : "Min_Pressure(hPa)"}, inplace=True)
+            pressure_record_df.to_excel("data/typhoon/sea_level_pressure_record.xlsx", index=False)
+
+            init = False
+        else:
+            wind_record_df = pd.read_excel("data/typhoon/wind_record.xlsx")
+            wind_record_df.sort_values(by="Location",inplace=True)
+            wind_df.sort_values(by="Location",inplace=True)
+            wind_record_df.reset_index(inplace=True, drop=True)
+            wind_df.reset_index(inplace=True, drop=True)
+            # print(wind_record_df.head())
+            # print(wind_df.head())
+            wind_df.columns = ["Location", "Mean_Wind_Direction", "10_Min_Mean_Speed(km/h)", "Max_Gust(km/h)"]
+            wind_df["Mean_Speed_Time"] = date_time
+            wind_df["60_Min_Mean_Wind_Direction"] = wind_df["Mean_Wind_Direction"]
+            wind_df["60_Min_Mean_Speed(km/h)"] = round(wind_df["10_Min_Mean_Speed(km/h)"] * 0.95)
+            wind_df["60_Min_Mean_Speed_Time"] = date_time
+            wind_df["Max_Gust_Direction"] = wind_df["Mean_Wind_Direction"]
+            wind_df["Max_Gust_Time"] = date_time
+
+            wind_record_df["Max_60_Min_Mean_Wind_Direction"] = np.where(wind_df["60_Min_Mean_Speed(km/h)"] > wind_record_df["Max_60_Min_Mean_Speed(km/h)"], wind_df["60_Min_Mean_Wind_Direction"], wind_record_df["Max_60_Min_Mean_Wind_Direction"])
+            wind_record_df["Max_60_Min_Mean_Speed_Time"] = np.where(wind_df["60_Min_Mean_Speed(km/h)"] > wind_record_df["Max_60_Min_Mean_Speed(km/h)"], wind_df["60_Min_Mean_Speed_Time"], wind_record_df["Max_60_Min_Mean_Speed_Time"])
+            wind_record_df["Max_60_Min_Mean_Speed(km/h)"] = np.where(wind_df["60_Min_Mean_Speed(km/h)"] > wind_record_df["Max_60_Min_Mean_Speed(km/h)"], wind_df["60_Min_Mean_Speed(km/h)"], wind_record_df["Max_60_Min_Mean_Speed(km/h)"])
+            
+
+            wind_record_df["Max_Gust_Direction"] = np.where(wind_df["Max_Gust(km/h)"] > wind_record_df["Max_Gust(km/h)"], wind_df["Max_Gust_Direction"], wind_record_df["Max_Gust_Direction"])
+            wind_record_df["Max_Gust_Time"] = np.where(wind_df["Max_Gust(km/h)"] > wind_record_df["Max_Gust(km/h)"], wind_df["Max_Gust_Time"], wind_record_df["Max_Gust_Time"])
+            wind_record_df["Max_Gust(km/h)"] = np.where(wind_df["Max_Gust(km/h)"] > wind_record_df["Max_Gust(km/h)"], wind_df["Max_Gust(km/h)"], wind_record_df["Max_Gust(km/h)"])
+
+            wind_record_df["Max_10_Min_Mean_Wind_Direction"] = np.where(wind_df["10_Min_Mean_Speed(km/h)"] > wind_record_df["Max_10_Min_Mean_Speed(km/h)"], wind_df["Mean_Wind_Direction"], wind_record_df["Max_10_Min_Mean_Wind_Direction"])
+            wind_record_df["Max_10_Min_Mean_Speed_Time"] = np.where(wind_df["10_Min_Mean_Speed(km/h)"] > wind_record_df["Max_10_Min_Mean_Speed(km/h)"], wind_df["Mean_Speed_Time"], wind_record_df["Max_10_Min_Mean_Speed_Time"])
+            wind_record_df["Max_10_Min_Mean_Speed(km/h)"] = np.where(wind_df["10_Min_Mean_Speed(km/h)"] > wind_record_df["Max_10_Min_Mean_Speed(km/h)"], wind_df["10_Min_Mean_Speed(km/h)"], wind_record_df["Max_10_Min_Mean_Speed(km/h)"])
+
+            wind_record_df.to_excel("data/typhoon/wind_record.xlsx", index=False)
+
+            pressure_record_df = pd.read_excel("data/typhoon/sea_level_pressure_record.xlsx")
+            # print(pressure_record_df.head())
+            # print(pressure_df.head())
+            pressure_df["Time"] = date_time
+            
+            pressure_record_df["Time"] = np.where(pressure_df["Mean_Sea_Level_Pressure(hPa)"] < pressure_record_df["Min_Pressure(hPa)"], pressure_df["Time"], pressure_record_df["Time"])
+            pressure_record_df["Min_Pressure(hPa)"] = np.where(pressure_df["Mean_Sea_Level_Pressure(hPa)"] < pressure_record_df["Min_Pressure(hPa)"], pressure_df["Mean_Sea_Level_Pressure(hPa)"], pressure_record_df["Min_Pressure(hPa)"])
+            
+            
+            pressure_record_df.to_excel("data/typhoon/sea_level_pressure_record.xlsx", index=False)
 
         countdown(10)
         print("")

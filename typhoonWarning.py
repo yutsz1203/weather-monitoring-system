@@ -7,12 +7,12 @@ from utils import countdown, get_distance_from_lat_lon_km
 
 
 def typhoonWarning():
-    last_lat, last_long, last_speed, last_dist, last_update_hour = (
+    last_lat, last_long, last_speed, last_dist, last_update_time = (
         0.0,
         0.0,
         0.0,
         0.0,
-        "0",
+        "",
     )
     lat_diff, long_diff, speed_diff, dist_diff = 0.0, 0.0, 0.0, 0.0
     lat_direc, long_direc = "", ""
@@ -26,32 +26,31 @@ def typhoonWarning():
             data = (json.loads(url.read().decode()))["details"]
             for warning in data:
                 if warning["warningStatementCode"] == "WTCSGNL":
-                    updateTime = warning["updateTime"]
-                    content = warning["contents"]
-                    text = "".join(content)
-                    typhoon_info = content[3]
-                    print(typhoon_info)
-                    hour_pattern = re.compile(r"\d+")
-                    update_hour = (re.search(hour_pattern, typhoon_info)).group()
-                    if update_hour == last_update_hour:
+                    update_time = warning["updateTime"]
+                    if update_time == last_update_time:
                         print(
-                            "Not updated yet. Waiting for 5 seconds before next fetch."
-                        )
+                                "Not updated yet. Waiting for 5 seconds before next fetch.\n"
+                            )
                         time.sleep(5)
                         skip_rest = True
                         break
-                    last_update_hour = update_hour
-                    am_pm = "AM" if typhoon_info[1:3] == "上午" else "PM"
-                    print(f"Last update hour: {last_update_hour} {am_pm}")
-                    for i, c in enumerate(typhoon_info):
-                        if c == "北" and typhoon_info[i + 1] == "緯":
-                            lat = float(typhoon_info[i + 2 : i + 6])
-                            long = float(typhoon_info[i + 10 : i + 15])
-                            dist = get_distance_from_lat_lon_km(lat, long)
-
-                        if c == "時" and typhoon_info[i + 1] == "速":
-                            speed = float(typhoon_info[i + 3 : i + 5])
-                            pass
+                        
+                    content = warning["contents"]
+                    
+                    for component in content:
+                        if component[0:3] in ["在上午", "在下午", "在正午"]:
+                            print(f"{component}\n")
+                        
+                        for i in range(len(component)):
+                            if component[i:i+2] == "北緯":
+                                lat = float(component[i + 2 : i + 6])
+                                long = float(component[i + 10 : i + 15])
+                                dist = get_distance_from_lat_lon_km(lat, long)
+                            if component[i:i+2] == "時速":
+                                speed = float(component[i + 3 : i + 5])
+                                break
+                             
+                    last_update_time = update_time
 
             if skip_rest:
                 continue
@@ -66,6 +65,11 @@ def typhoonWarning():
                 long_diff = round(long - last_long, 1)
                 speed_diff = round(speed - last_speed, 1)
                 dist_diff = round(dist - last_dist, 1)
+
+                last_dist = dist
+                last_long = long
+                last_lat = lat
+                last_speed = speed
 
             if lat_diff > 0:
                 lat_direc = "N"
@@ -86,7 +90,7 @@ def typhoonWarning():
             speed_sign = "+" if speed_diff >= 0 else ""
             dist_sign = "+" if dist_diff >= 0 else ""
 
-            print(f"As at {updateTime}: ")
+            print(f"As at {update_time}: ")
             print(
                 f"Location: {lat}° N ({lat_diff}{lat_direc}), {long}° E ({long_diff}{long_direc})"
             )
@@ -95,7 +99,7 @@ def typhoonWarning():
             )
             print(f"Speed: {speed}km/h ({speed_sign}{speed_diff} km/h)\n")
             print("Full warning: ")
-            print(text)
+            print("".join(content))
 
             countdown(60, "TCSGNL")
 
