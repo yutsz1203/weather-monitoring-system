@@ -15,6 +15,7 @@ def track_sea_level(init=False):
     df.drop(df.columns[[1,2]], axis=1, inplace=True)
     df.columns = ["Location", "Max_Sea_Level(m)"]
     df["Max_Sea_Level_Time"] = f"{day}/{month}/{year} {time}"
+    df["Max_Sea_Level(m)"] = np.where(df["Max_Sea_Level(m)"] == "----", "0.0", df["Max_Sea_Level(m)"])
 
     if init:
         df.to_excel("data/typhoon/tides_record.xlsx", index=False)

@@ -186,7 +186,9 @@ def typhoon_tracking(refresh, init=False):
             max_gust_wind_scale = get_wind_scale(max_gust)
             padded_location = pad_chinese_string(location, 12)
             padded_wind_dir = pad_chinese_string(wind_direction, 8)
-            print(f"{padded_location} {padded_wind_dir} {int(mean_speed)}(F{mean_speed_wind_scale}) | {int(max_gust)}(F{max_gust_wind_scale})")
+            padded_mean_speed_wind_scale = f"(F{mean_speed_wind_scale})"
+            padded_max_gust_wind_scale = f"(F{max_gust_wind_scale})"
+            print(f"{padded_location} {padded_wind_dir} {int(mean_speed):3}{padded_mean_speed_wind_scale:5} | {int(max_gust):3}{padded_max_gust_wind_scale:5}")
         print("")
         if len(hurricane_mean_speed) >= 1:
             print(f"颶風({len(hurricane_mean_speed)}): {'、'.join(hurricane_mean_speed)}")

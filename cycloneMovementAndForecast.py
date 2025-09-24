@@ -44,7 +44,7 @@ def get_cyclone_url():
 
 def get_cyclone_movement(data, init=False):
 
-    name = data["TropicalCycloneName"]
+    cyclone_name = data["TropicalCycloneName"]
     curr_information = data["AnalysisInformation"]
 
     if init:
@@ -72,12 +72,13 @@ def get_cyclone_movement(data, init=False):
         ]
 
     print(track_df.tail())
-    track_df.to_excel("data/typhoon/cyclone_track.xlsx", index=False)
+    track_df.to_excel(f"data/typhoon/{cyclone_name}_movement.xlsx", index=False)
 
-    print(f"Latest updates for {name}:\n{track_df.iloc[-1]}")
+    print(f"Latest updates for {cyclone_name}:\n{track_df.iloc[-1]}")
 
 def get_cyclone_forecast(data):
 
+    cyclone_name = data["TropicalCycloneName"]
     curr_information = data["AnalysisInformation"]
     curr_intensity = curr_information["Intensity"]
     curr_maximum_wind = curr_information["MaximumWind"]
@@ -98,7 +99,7 @@ def get_cyclone_forecast(data):
     start = pd.to_datetime(time, utc=True).tz_convert("Asia/Hong_Kong") + pd.Timedelta(hours=1)
     timestamps = pd.date_range(start=start, periods=len(forecast_df), freq='h')
     forecast_df["Time"] = timestamps.strftime('%Y-%m-%dHKT%H:%M')
-    forecast_df.to_excel("data/typhoon/cyclone_forecast.xlsx", index=False)
+    forecast_df.to_excel(f"data/typhoon/{cyclone_name}_forecast.xlsx", index=False)
 
 
 if __name__ == "__main__":
