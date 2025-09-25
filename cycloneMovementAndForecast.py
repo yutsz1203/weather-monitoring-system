@@ -55,7 +55,7 @@ def get_cyclone_movement(data, init=False):
         track_df = pd.DataFrame(past_information)
         track_df = process_cyclone_dataframe(track_df)
     else:
-        track_df = pd.read_excel("data/typhoon/cyclone_track.xlsx")
+        track_df = pd.read_excel(f"data/typhoon/{cyclone_name}_track.xlsx")
         maxwind = int(curr_information["MaximumWind"][:-4])
         curr_hour = str((int(curr_information["Time"][11:13]) + 8) % 24).zfill(2)
         time = f'{curr_information["Time"][:10]}HKT{curr_hour}:00'

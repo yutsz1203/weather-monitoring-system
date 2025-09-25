@@ -73,7 +73,7 @@ def countdown(interval, type="info"):
             else (now.replace(minute=45, second=45, microsecond=0) + timedelta(hours=1))
         )
     elif type == "cycloneTracking":
-        next_time = now.replace(minute=2, second=0, microsecond=0) + timedelta(hours=1)
+        next_time = now.replace(minute=2, second=30, microsecond=0) + timedelta(hours=1)
 
     seconds_left = int((next_time - now).total_seconds())
     minutes_left = seconds_left // 60
