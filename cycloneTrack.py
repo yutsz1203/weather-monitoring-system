@@ -76,7 +76,7 @@ def get_cyclone_movement(data, issued_signal):
         track_df = process_cyclone_dataframe(track_df)
     else:
         track_df = pd.read_excel(
-            f"data/typhoon/{cyclone_name}/{cyclone_name}_track.xlsx"
+            f"data/tropicalCyclones/{cyclone_name}/{cyclone_name}_track.xlsx"
         )
         maxwind = int(curr_information["MaximumWind"][:-4])
         curr_hour = str((int(curr_information["Time"][11:13]) + 8) % 24).zfill(2)
@@ -95,7 +95,7 @@ def get_cyclone_movement(data, issued_signal):
 
     print(track_df.tail())
     track_df.to_excel(
-        f"data/typhoon/{cyclone_name}/{cyclone_name}_track.xlsx", index=False
+        f"data/tropicalCyclones/{cyclone_name}/{cyclone_name}_track.xlsx", index=False
     )
 
     print(f"Latest updates for {cyclone_name}:\n{track_df.iloc[-1]}")
@@ -127,7 +127,7 @@ def get_cyclone_forecast(data):
     timestamps = pd.date_range(start=start, periods=len(forecast_df), freq="h")
     forecast_df["Time"] = timestamps.strftime("%Y-%m-%dHKT%H:%M")
     forecast_df.to_excel(
-        f"data/typhoon/{cyclone_name}/{cyclone_name}_forecast.xlsx", index=False
+        f"data/tropicalCyclones/{cyclone_name}/{cyclone_name}_forecast.xlsx", index=False
     )
 
 
