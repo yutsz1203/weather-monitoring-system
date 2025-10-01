@@ -1,4 +1,5 @@
 import threading
+from pathlib import Path
 
 import pandas as pd
 import requests
@@ -69,10 +70,14 @@ def get_cyclone_movement(data, issued_signal):
 
     if not issued_signal:
         past_information = data["PastInformation"]
-        for past in past_information:
-            del past["Index"]
-        past_information.append(curr_information)
-        track_df = pd.DataFrame(past_information)
+        if isinstance(past_information, dict):
+            del past_information["Index"]
+            track_df = pd.DataFrame([past_information, curr_information])
+        else:
+            for past in past_information:
+                del past["Index"]
+            past_information.append(curr_information)
+            track_df = pd.DataFrame(past_information)
         track_df = process_cyclone_dataframe(track_df)
     else:
         track_df = pd.read_excel(
@@ -92,11 +97,16 @@ def get_cyclone_movement(data, issued_signal):
             lon,
             dist,
         ]
+    if cyclone_name == "Tropical Depression":
+        cyclone_name = "TropicalDepression"
 
     print(track_df.tail())
-    track_df.to_excel(
-        f"data/tropicalCyclones/{cyclone_name}/{cyclone_name}_track.xlsx", index=False
-    )
+
+    dir_path = Path(f"data/tropicalCyclones/{cyclone_name}")
+    dir_path.mkdir(parents=True, exist_ok=True)
+
+    file_path = dir_path / f"{cyclone_name}_track.xlsx"
+    track_df.to_excel(file_path, index=False)
 
     print(f"Latest updates for {cyclone_name}:\n{track_df.iloc[-1]}")
 
@@ -126,8 +136,18 @@ def get_cyclone_forecast(data):
     )
     timestamps = pd.date_range(start=start, periods=len(forecast_df), freq="h")
     forecast_df["Time"] = timestamps.strftime("%Y-%m-%dHKT%H:%M")
+
+    if cyclone_name == "Tropical Depression":
+        cyclone_name = "TropicalDepression"
+
+    dir_path = Path(f"data/tropicalCyclones/{cyclone_name}")
+    dir_path.mkdir(parents=True, exist_ok=True)
+
+    file_path = dir_path / f"{cyclone_name}_forecast.xlsx"
+
     forecast_df.to_excel(
-        f"data/tropicalCyclones/{cyclone_name}/{cyclone_name}_forecast.xlsx", index=False
+        file_path,
+        index=False,
     )
 
 
