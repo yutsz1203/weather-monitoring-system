@@ -11,6 +11,16 @@ A command-line interface tool that processes and displays real-time meteorologic
 - [Getting Started](#getting-started)
   - [Dependencies](#dependencies)
   - [Usage](#usage)
+    - [Meteorological Data](#meteorological-data)
+        - [Hourly Rainfall](#hourly-rainfall)
+        - [10-minute mean wind direaction, wind speed, and maximum gust](#10-minute-mean-wind-direaction-wind-speed-and-maximum-gust)
+    - [Extreme Weather Events](#extreme-weather-events)
+        - [Special Weather Tips](#special-weather-tips)
+    - [Extreme Weather Events - Tropical Cyclones](#extreme-weather-events---tropical-cyclone)
+        - [Tropical Cyclone Track and Forecast Information](#tropical-cyclone-track-and-forecast-information)
+        - [Tropical Cyclone Records](#tropical-cyclone-records)
+        - [Latest Tropical Cyclone Warning Information](#latest-tropical-cyclone-warning-information)
+
 
 ## Description
 
@@ -56,9 +66,33 @@ Use the package manager `pip` to install the dependencies for this project.
 
 ### Usage
 
-#### Tropical Cyclone Track and Forecast Information
+#### Meteorological Data
 
-`$ python cycloneTrack.py`
+##### Hourly Rainfall
+
+`$ python rainfall.py`
+
+Results in: `data/rainfall/latest_rainfall.csv`
+
+##### 10-minute mean wind direaction, wind speed, and maximum gust
+
+`$ python windinfo.py`
+
+Results in: `data/windinfo/latest_windinfo.csv`
+
+#### Extreme Weather Events
+
+##### Special Weather Tips
+
+The system provides latest updates about any special weather tips during extreme weather events.
+
+`$ python specialWeatherTips.py`
+
+#### Extreme Weather Events - Tropical Cyclones
+
+##### Tropical Cyclone Track and Forecast Information
+
+`$ python tropicalCycloneTracks.py`
 
 It is capable to track more than one tropical cyclones.
 
@@ -66,18 +100,24 @@ Track information in: `data/tropicalCyclones/{tropical_cyclone_name}/{tropical_c
 
 Forecast information in: `data/tropicalCyclones/{tropical_cyclone_name}/{tropical_cyclone_name}_forecast.xlsx`
 
-#### Hourly Rainfall
+##### Tropical Cyclone Records 
 
-`$ python rainfall.py`
+`$ python tropicalCycloneRecords.py`
 
-Results in: `data/rainfall/latest_rainfall.csv`
+It provides the latest wind speed data of all weather stations, as well as tracking key tropical cyclone metrics.
 
-#### 10-minute mean wind direaction, wind speed, and maximum gust
+Maximum 60-minute mean speed, Gust peak speed: `data\tropicalCyclones\{tropical_cyclone_name}\{tropical_cyclone_name}_wind_record.xlsx`
 
-`$ python windinfo.py`
+Minimum 1-minute mean sea level pressure: `data\tropicalCyclones\{tropical_cyclone_name}\{tropical_cyclone_name}_sea_level_pressure_record.xlsx`
 
-Results in: `data/windinfo/latest_windinfo.csv`
+Sea level above chart datum: `data\tropicalCyclones\{tropical_cyclone_name}\RAGASA_tides_record.xlsx`
 
-#### Tides information
+##### Latest Tropical Cyclone Warning Information
 
-`$ python seaLevelTracking.py`
+The system provides the latest update about the tropical cylcone warning, including its latitude, longitude, intensity, wind speed, and distance to Hong Kong.
+
+`$ python tropicalCycloneWarnings.py`
+
+
+
+
